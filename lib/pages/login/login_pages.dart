@@ -1,9 +1,12 @@
-//import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:developer';
+import 'package:bukuxirplb/config/config_apps.dart';
+import 'package:bukuxirplb/provider/token_provider.dart';
 import 'package:flutter/material.dart';
-// ignore: unnecessary_import
-import 'package:flutter/widgets.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
-class LoginPages extends StatefulWidget { //terdapat elemen yang dapat berubah.
+class LoginPages extends StatefulWidget {
   const LoginPages({super.key});
 
   @override
@@ -12,129 +15,217 @@ class LoginPages extends StatefulWidget { //terdapat elemen yang dapat berubah.
 
 class _LoginPagesState extends State<LoginPages> {
   final TextEditingController emailTextController = TextEditingController();
-  final TextEditingController passwordTextController = TextEditingController();//mengontrol input email dan password.
-  bool passwordVisible = false; //password terlihat atau tidak.
-  final _formKey = GlobalKey<FormState>();  //kunci form yang digunakan untuk validasi input.
+  final TextEditingController passwordTextController = TextEditingController();
+  final passwordVisible = false;
+  var isLoading = false;
+  final _formkey = GlobalKey<FormState>();
+
+  //Future<bool> login() async {
+  Future<void> login() async {
+    isLoading = true;
+    //Variabel URL Backend pada config_apps.dart
+    final dynamic apiUrl = Uri.parse(ConfigApps.url + ConfigApps.login);
+    //Mengambil nilai dari email dan password
+    Map<String, String> postData = {
+      "email": emailTextController.text,
+      "password": passwordTextController.text
+    };
+    //try {
+    final response = await http.post(apiUrl,
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: postData);
+    Map<String, dynamic> responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && responseData['status']) {
+      Provider.of<TokenProvider>(context, listen: false)
+          .setCurrentToken(responseData['token']);
+      //TokenProvider().setCurrentToken(responseData["token"]);
+      log(context.read<TokenProvider>().getCurrentToken.toString());
+      //log(Provider.of<TokenProvider>(context).getCurrentToken as String);
+      //Provider.of<TokenProvider>(context, listen: false).setCurrentToken(responseData['token']);
+      //return true;
+    } else {
+      //return false;
+      log("Login Gagal");
+    }
+    // } catch (error) {
+    //return false;
+    /// log("login gagal 2");
+    //log(responseData['']);
+    //log(apiUrl.toString());
+    //log(error.toString());
+    //}
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( //kerangka dasar layar.
-      backgroundColor: const Color(0xFF4A321E),
-           body: Center(
+    return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: false,
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text( //Header
-              "EduStar",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 38,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Login",
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 50),
-            Container( //Form Login
-              width: MediaQuery.of(context).size.width * 0.85,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDF5E6), // Warna krem sesuai desain
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    spreadRadius: 2,
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: emailTextController,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Email tidak boleh kosong";
-                        }
-                        return null;
-                      },
-                      decoration: InputDecoration(
-                        hintText: "Email/Username",
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.email, color: Colors.black),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    TextFormField(
-                      controller: passwordTextController,
-                      obscureText: !passwordVisible,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Password tidak boleh kosong";
-                        }
-                        return null;
-                      },
-                      decoration: InputDecoration(
-                        hintText: "Password",
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.lock, color: Colors.black),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            passwordVisible ? Icons.visibility : Icons.visibility_off,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              passwordVisible = !passwordVisible;
-                            });
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // Login logic
-                          }
-                        },
-                        child: const Text("Sign In", style: TextStyle(color: Colors.white)),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text("Forgot password?", style: TextStyle(color: Colors.black54)),
-                    ),
-                  ],
+            const Center(
+              heightFactor: 1.4,
+              widthFactor: 5.0,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(40, 70, 40, 10),
+                child: Text(
+                  "BukuKu",
+                  style: TextStyle(
+                      color: Color.fromARGB(201, 8, 160, 112),
+                      fontSize: 38,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ),
+            const Center(
+              heightFactor: 0.9,
+              child: Column(children: [
+                Padding(
+                  padding: EdgeInsets.all(9),
+                  child: Text(
+                    "Login",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 18,
+                        color: Color.fromARGB(246, 75, 75, 75)),
+                  ),
+                )
+              ]),
+            ),
+            Opacity(
+                opacity: 1,
+                child: Form(
+                    key: _formkey,
+                    child: Container(
+                        width: MediaQuery.of(context).size.width / 1.2,
+                        height: MediaQuery.of(context).size.height / 2.5,
+                        decoration: const BoxDecoration(
+                            color: Color.fromARGB(0, 223, 24, 24),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(20))),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(2, 10, 2, 5),
+                          child: Column(
+                            children: [
+                              //Username Field
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 2, 0, 2),
+                                child: TextFormField(
+                                  keyboardType: TextInputType.emailAddress,
+                                  controller: emailTextController,
+                                  autofocus: true,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "Email tidak boleh kosong";
+                                    }
+                                    return null;
+                                  },
+                                  textAlign: TextAlign.start,
+                                  maxLines: 1,
+                                  decoration: InputDecoration(
+                                      fillColor:
+                                          const Color.fromARGB(0, 223, 24, 24),
+                                      filled: true,
+                                      hintText: "Email/ Username",
+                                      prefixIcon: const Icon(
+                                        Icons.email,
+                                        color: Colors.black,
+                                      ),
+                                      focusColor: Colors.black,
+                                      focusedErrorBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      errorBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      )),
+                                ),
+                              ),
+                              //Password Field
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                                child: TextFormField(
+                                  obscureText: true,
+                                  controller: passwordTextController,
+                                  textAlign: TextAlign.start,
+                                  maxLines: 1,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "Password tidak boleh kosong";
+                                    }
+                                    return null;
+                                  },
+                                  decoration: InputDecoration(
+                                      hintText: "password",
+                                      suffixIcon: const Icon(Icons.visibility),
+                                      prefixIcon: const Icon(
+                                        Icons.key,
+                                        color: Colors.black,
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      errorBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20)),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      )),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(0, 5, 10, 9),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    "Lupa Password? klik disini",
+                                    textAlign: TextAlign.end,
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color:
+                                            Color.fromARGB(201, 8, 160, 112)),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(0, 5, 0, 9),
+                                child: MaterialButton(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  minWidth: MediaQuery.of(context).size.width,
+                                  color: const Color.fromARGB(201, 8, 160, 112),
+                                  onPressed: () {
+                                    //Validasi form input
+                                    if (_formkey.currentState!.validate()) {
+                                      //aksi login
+                                      login();
+                                    }
+                                  },
+                                  child: const Text(
+                                    "Login",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              )
+                              /*
+                              const Text(
+                                "Lupa Password?, klik disini",
+                                style: TextStyle(color: Color.fromARGB(255, 15, 2, 109)),)
+                                */
+                            ],
+                          ),
+                        )))),
           ],
         ),
       ),
